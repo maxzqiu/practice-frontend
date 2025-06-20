@@ -8,6 +8,7 @@ import cors from "cors";
 //const express = require("express")
 import express from "express";
 const app = express();
+let time=0.5;
 app.use(express.json());
 app.use(cors());
 app.use((req, res, next) => {
@@ -26,7 +27,13 @@ app.use((req, res, next) => {
 // let maxData=fs.readFileSync("max.json","utf8");
 // console.log(maxData);
 
-let links: Record<string, string> = {};
+interface Link{
+    "expire":number,
+    "url":string
+
+}
+
+let links: Record<string, Link> = {};
 try {
   links = JSON.parse(fs.readFileSync("./database.json", "utf8"));
 } catch {
@@ -61,7 +68,10 @@ app.post("/api", (req, res) => {
     }
     if (flag === false) {
       nums.push(short);
-      links[short] = req.body.myURL;
+      // {short:
+          // {time:CURRENTTIME
+          // url: myURL}}
+      links[short] = {"expire":Date.now()+req.body.TTL*60000,"url":req.body.myURL};
       fs.writeFileSync("./database.json", JSON.stringify(links));
       log("The link has been saved. ");
       res.send("localhost:8000/" + short);
@@ -77,7 +87,12 @@ app.get("/:url", (req, res) => {
   let url = req.params.url;
   console.log(url);
   if (url in links) {
-    res.redirect(links[url]);
+    if (links[url].expire<Date.now()){
+      res.status(410).send("Your link has expired!" )
+    } else {
+      res.redirect(links[url].url);
+    }
+    
   } else {
     res.sendStatus(404);
   }

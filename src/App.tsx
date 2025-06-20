@@ -9,6 +9,7 @@ function App() {
   let [input, setInput] = useState("");
   let [isURL, setIsURL] = useState(false);
   let [isCopied, setIsCopied] = useState(false);
+  const expire_time=1;
 
   async function fetchAPI() {
     try {
@@ -16,6 +17,7 @@ function App() {
       setIsURL(true);
       let payload = {
         myURL: input,
+        TTL:expire_time
       };
       const options = {
         method: "POST",
@@ -67,6 +69,7 @@ function App() {
       <br></br>
       <label htmlFor="input">Enter your link here: </label>
       <input id="input" onChange={(e) => setInput(e.target.value)}></input>
+
       <button
         onClick={() => {
           fetchAPI();
