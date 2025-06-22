@@ -87,6 +87,7 @@ app.get("/", (req, res) => {
     //res.status(418).json({teapot:"gray"})
     res.download("main.js");
 });
-app.listen("8000", () => {
-    console.log("Connected to port 8000");
-});
+
+module.exports = (req, res) => {
+    app(req, res);
+  };
