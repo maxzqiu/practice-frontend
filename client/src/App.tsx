@@ -56,6 +56,12 @@ function App() {
     <>
       <h2>THE ULTIMATE LINK SHORTENER</h2>
       <p>The shortened link will show up here: {data}</p>
+      <QRCode
+          size={256}
+          style={{ height: "auto", maxWidth: "20%", width: "20%" }}
+          value={"http://artthatbarksqr.vercel.app"}
+          viewBox={"0 0 256 256"}
+        ></QRCode>
       {isURL ? (
         <QRCode
           size={256}
