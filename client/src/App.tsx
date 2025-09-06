@@ -3,14 +3,63 @@ import "./App.css";
 import QRCode from "react-qr-code";
 
 let API_URL = "http://localhost:8000/api";
+let password_check="http://localhost:8000/password"
 
 function App() {
   let [data, setData] = useState("");
   let [input, setInput] = useState("");
   let [isURL, setIsURL] = useState(false);
   let [isCopied, setIsCopied] = useState(false);
+  let [password,setPassword]=useState("")
+  let [username,setUsername]=useState("")
+  let [name,setName]=useState("")
+  let [isSuccessful,setIsSuccessful]=useState("");
+  let [created,setCreated]=useState("")
   const expire_time=1;
 
+  async function checkPassword(){
+    let payload={
+      "username":username,
+      "password":password,
+    }
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    };
+
+    let res:any = await fetch(password_check, options);
+    let response=await res.json()
+    if (response.isSuccessful){
+      setIsSuccessful("Successful");
+    } else {
+      setIsSuccessful("unsuccessful");
+    }
+  }
+
+  async function createAccount(){
+    let payload={
+      "username":username,
+      "password":password,
+      "name":name
+    }
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload)
+    };
+    let res = await fetch("http://localhost:8000/createaccount", options);
+    let response=await res.json()
+    if (response.isSuccessful){
+      setCreated("successful");
+    } else {
+      setCreated("unsuccessful");
+    }
+  }
   async function fetchAPI() {
     try {
       new URL(input);
@@ -52,6 +101,8 @@ function App() {
     }
   }
 
+  
+
   return (
     <>
       <h2>THE ULTIMATE LINK SHORTENER</h2>
@@ -59,7 +110,7 @@ function App() {
       <QRCode
           size={256}
           style={{ height: "auto", maxWidth: "20%", width: "20%" }}
-          value={"http://artthatbarksqr.vercel.app"}
+          value={data}
           viewBox={"0 0 256 256"}
         ></QRCode>
       {isURL ? (
@@ -97,6 +148,19 @@ function App() {
       )}
 
       {isCopied ? <p>Copied to Clipboard!</p> : <></>}
+    <p>Enter your user name and passcode here: </p> 
+    <input onChange={(e)=>setUsername(e.target.value)}></input>
+    <input onChange={(e)=>setPassword(e.target.value)}></input>
+    <button onClick={()=>checkPassword()}>Check Password! </button>
+
+    <p>Create a new account here: </p> 
+    <input onChange={(e)=>setName(e.target.value)}></input>
+    <input onChange={(e)=>setUsername(e.target.value)}></input>
+    <input onChange={(e)=>setPassword(e.target.value)}></input>
+    <button onClick={()=>createAccount()}>Create Account </button>
+    <p>{created}</p>
+    <p>{isSuccessful}</p>
+    
     </>
   );
 }

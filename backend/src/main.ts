@@ -3,7 +3,8 @@ import fs from "fs";
 import cors from "cors";
 import Database from "better-sqlite3";
 import { hashSync } from "bcryptjs";
-import { insertValuesToDatabase, insertValuestoLog, readItems } from "./proxy.ts"
+import { insertValuesToDatabase, insertValuestoLog, readItems ,readItemsPasswords,insertValuesToPassword } from "./proxy"
+
 
 
 function makeid(length:number) {
@@ -104,6 +105,12 @@ app.use((req, res, next) => {
 
  // number of rows in sqlite database 
 
+ app.get("/", (req, res) => {
+  //res.sendStatus(418);
+  //res.status(418).json({teapot:"gray"})
+  res.send("You've reached the server. ");
+
+});
 
 app.post("/api", (req, res) => {
   let nums = readItems("shortlink","longlink",null)as number[]
@@ -173,6 +180,22 @@ app.post("/api", (req, res) => {
 
    
  });
+
+ 
+app.post("/password",(req,res)=>{
+  let status:{isSuccessful:boolean}={
+    "isSuccessful":false
+  }
+  let salt:any=(readItemsPasswords("salt","username",req.body.username))!
+  let hashed=hashSync(req.body.password+salt+pepper,salt)
+  let savedPassword:any = readItemsPasswords("password","username",req.body.username)
+  if (savedPassword === hashed){
+    res.send(status)
+  } else {
+    res.json(status)
+  }
+   
+})
 app.get("/:url", (req, res) => {
   let url = req.params.url;
   console.log(url);
@@ -190,11 +213,28 @@ app.get("/:url", (req, res) => {
   }
 });
 
-app.get("/", (req, res) => {
-  //res.sendStatus(418);
-  //res.status(418).json({teapot:"gray"})
-  res.download("main.js");
+app.post("/createaccount",(req,res)=>{
+  let status:{isSuccessful:boolean}={
+    "isSuccessful":false
+  }
+  let salt = makeid(10)
+  let hashed=hashSync(req.body.password+salt+pepper,salt)
+  try {
+    insertValuesToPassword({
+      "name":req.body.name,
+      "username":req.body.username,
+      "password":hashed,
+      "salt":salt
+    })
+    status.isSuccessful=true
+    res.send(status)
+  } catch{
+    res.send(status)
+  }
+
 });
+
+
 
 app.listen("8000", () => {
   console.log("Connected to port 8000");
