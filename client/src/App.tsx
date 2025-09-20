@@ -32,6 +32,7 @@ function App() {
 
     let res:any = await fetch(password_check, options);
     let response=await res.json()
+    console.log(response)
     if (response.isSuccessful){
       setIsSuccessful("Successful");
     } else {

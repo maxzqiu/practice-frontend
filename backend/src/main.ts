@@ -105,14 +105,14 @@ app.use((req, res, next) => {
 
  // number of rows in sqlite database 
 
- app.get("/", (req, res) => {
+ app.get("/", (req:any, res:any) => {
   //res.sendStatus(418);
   //res.status(418).json({teapot:"gray"})
   res.send("You've reached the server. ");
 
 });
 
-app.post("/api", (req, res) => {
+app.post("/api", (req:any, res:any) => {
   let nums = readItems("shortlink","longlink",null)as number[]
   // shortlink where link!=null
     
@@ -182,21 +182,33 @@ app.post("/api", (req, res) => {
  });
 
  
-app.post("/password",(req,res)=>{
+app.post("/password",(req:any,res:any)=>{
   let status:{isSuccessful:boolean}={
     "isSuccessful":false
   }
   let salt:any=(readItemsPasswords("salt","username",req.body.username))!
-  let hashed=hashSync(req.body.password+salt+pepper,salt)
+  console.log(req.body.password)
+  console.log(salt)
+  console.log(salt[0].salt);
+  console.log(req.body.password+salt[0].salt+pepper)
+  let hashed=hashSync(req.body.password+salt[0].salt+pepper)
+
+  console.log(hashed)
   let savedPassword:any = readItemsPasswords("password","username",req.body.username)
-  if (savedPassword === hashed){
+  console.log(savedPassword);
+  console.log(req.body.username);
+
+  if (savedPassword[0].password === hashed){
+    console.log("successful")
+    status.isSuccessful=true;
     res.send(status)
   } else {
+    console.log("unsuccessful")
     res.json(status)
   }
    
 })
-app.get("/:url", (req, res) => {
+app.get("/:url", (req:any, res:any) => {
   let url = req.params.url;
   console.log(url);
   let expiration = readItems("expire","longlink",url)as number[];
@@ -213,12 +225,14 @@ app.get("/:url", (req, res) => {
   }
 });
 
-app.post("/createaccount",(req,res)=>{
+app.post("/createaccount",(req:any,res:any)=>{
   let status:{isSuccessful:boolean}={
     "isSuccessful":false
   }
   let salt = makeid(10)
-  let hashed=hashSync(req.body.password+salt+pepper,salt)
+  console.log(salt);
+  console.log(req.body.password+salt+pepper);
+  let hashed=hashSync(req.body.password+salt+pepper)
   try {
     insertValuesToPassword({
       "name":req.body.name,

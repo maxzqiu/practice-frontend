@@ -28,7 +28,8 @@ passwords.exec(`
         CREATE TABLE IF NOT EXISTS passwords (
             name TEXT NOT NULL,
             username TEXT NOT NULL,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            salt TEXT NOT NULL
         )
     `)
 export function insertValuesToDatabase(data:Record<string,string|number>){
@@ -39,8 +40,8 @@ export function insertValuesToDatabase(data:Record<string,string|number>){
 
 export function insertValuesToPassword(data:Record<string,string|number>){
     passwords.prepare(`
-            INSERT INTO passwords VALUES (?,?,?)
-        `).run(data.name,data.username,data.password)
+            INSERT INTO passwords VALUES (?,?,?,?)
+        `).run(data.name,data.username,data.password,data.salt)
 }
 
 export function insertValuestoLog(data:Record<string,string|number>){
@@ -50,14 +51,14 @@ export function insertValuestoLog(data:Record<string,string|number>){
 }
 export function readItems(column:any,variablegoal:any,goalvalue:any){
     return db.prepare(`
-        SELECT ? FROM ? WHERE ?=?
-      `).all(column,"database",variablegoal,goalvalue)
+        SELECT ? FROM database WHERE ${variablegoal}=?
+      `).all(column,goalvalue)
     
 }
 
 export function readItemsPasswords(column:any,variablegoal:any,goalvalue:any){
     return passwords.prepare(`
-        SELECT ? FROM ? WHERE ?=?
-      `).all(column,"passwords",variablegoal,goalvalue)
+        SELECT ${column} FROM passwords WHERE ${variablegoal}=?
+      `).all(goalvalue)
     
 }
