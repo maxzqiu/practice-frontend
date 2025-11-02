@@ -2,17 +2,18 @@
 // 
 
 import Database from "better-sqlite3"
-const db = new Database("./database.db");
+const database = new Database("./database.db");
 const log = new Database("./log.db");
 const passwords = new Database("./passwords.db")
 
-db.pragma("journal_mode=WAL");
+database.pragma("journal_mode=WAL");
 
-db.exec(`
+database.exec(`
     CREATE TABLE IF NOT EXISTS database (
     longlink TEXT NOT NULL,
-    shortlink NUMBER,
-    expire NUMBER
+    shortlink NUMBER NOT NULL,
+    expire NUMBER NOT NULL,
+    username TEXT NOT NULL
     )
   `)
   
@@ -33,9 +34,11 @@ passwords.exec(`
         )
     `)
 export function insertValuesToDatabase(data:Record<string,string|number>){
-    db.prepare(`
-            INSERT INTO db VALUES (?,?,?)
-        `).run(data.longlink,data.shortlink,data.expire)
+    console.log(data)
+    database.prepare(`
+            INSERT INTO database VALUES (?,?,?,?)
+        `).run(data.longlink,data.shortlink,data.expire,data.username)
+    console.log("done")
 }
 
 export function insertValuesToPassword(data:Record<string,string|number>){
@@ -49,10 +52,21 @@ export function insertValuestoLog(data:Record<string,string|number>){
         INSERT INTO log VALUES(?,?,?)
         ` ).run(data.ip,data.time,data.action)
 }
-export function readItems(column:any,variablegoal:any,goalvalue:any){
-    return db.prepare(`
-        SELECT ? FROM database WHERE ${variablegoal}=?
-      `).all(column,goalvalue)
+export function readItems(specific:boolean,column:any,variablegoal:any,goalvalue:any){
+    if (specific===false){
+        console.log("function part 1 ran")
+        return database.prepare(`
+            SELECT ${column} FROM database
+            `).all()
+    }
+    else {
+        console.log("function part 2 ran")
+        return database.prepare(`
+            SELECT ${column} FROM database WHERE ${variablegoal}=${goalvalue}
+          `).all()
+    }
+
+    
     
 }
 

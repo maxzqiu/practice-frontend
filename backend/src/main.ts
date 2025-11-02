@@ -2,10 +2,11 @@
 import fs from "fs";
 import cors from "cors";
 import Database from "better-sqlite3";
-import { hashSync } from "bcryptjs";
+import { genSaltSync, hashSync } from "bcryptjs";
 import { insertValuesToDatabase, insertValuestoLog, readItems ,readItemsPasswords,insertValuesToPassword } from "./proxy"
-
-
+// let SALT=genSaltSync(10)
+// console.log(SALT)
+let SALT="$2b$10$Te8To.ZJAW96xQ6GFaWc.."
 
 function makeid(length:number) {
   let result           = '';
@@ -113,10 +114,10 @@ app.use((req, res, next) => {
 });
 
 app.post("/api", (req:any, res:any) => {
-  let nums = readItems("shortlink","longlink",null)as number[]
+  let nums = readItems(false,"shortlink","","")as number[]
   // shortlink where link!=null
-    
-
+  
+  console.log("the code made it to 120")
   console.log(req.body);
   let short = Math.floor(Math.random() * 10000).toString();
   if (nums.length === 10000) {
@@ -131,6 +132,7 @@ app.post("/api", (req:any, res:any) => {
   while (short in nums) {
     short = Math.floor(Math.random() * 10000).toString();
   }
+  console.log("the code made it to line 135")
   // try {
   //   let flag = false;
 
@@ -152,11 +154,18 @@ app.post("/api", (req:any, res:any) => {
         //   INSERT INTO database VALUES (?,?)
         //   `).run(req.body.myURL,short,links[short]["expire"])
        //insertValues(db,[req.body.myURL,short,Date.now()+req.body.TTL*60000])
+       console.log("made it to 157")
+       console.log(req.body.myURL)  
+       console.log(parseInt(short))
+       console.log(req.body.TTL*60000)
+       console.log(req.body.account)
        insertValuesToDatabase({
           "longlink":req.body.myURL,
-          "shortlink":short,
-          "expire":req.body.TTL*60000,
+          "shortlink":parseInt(short),
+          "expire":req.body.TTL*60000+Date.now(),
+          "username":req.body.account
        })
+       console.log("made it to 163")
        res.send("localhost:8000/" + short);
         
  
@@ -166,6 +175,7 @@ app.post("/api", (req:any, res:any) => {
           "time":new Date().toString(),
           "action":"New link entered into the database"
         })
+        console.log("the code made it to 172")
       } catch {
         res.status(400).send("400 Bad Request");
         //insertValues(log,[req.ip,new Date().toString(),"The request sent by this user has failed"])
@@ -191,38 +201,58 @@ app.post("/password",(req:any,res:any)=>{
   console.log(salt)
   console.log(salt[0].salt);
   console.log(req.body.password+salt[0].salt+pepper)
-  let hashed=hashSync(req.body.password+salt[0].salt+pepper)
+  let hashed=hashSync(req.body.password+salt[0].salt+pepper,SALT)
 
   console.log(hashed)
   let savedPassword:any = readItemsPasswords("password","username",req.body.username)
+  
   console.log(savedPassword);
   console.log(req.body.username);
 
   if (savedPassword[0].password === hashed){
+    let userInformation:any=readItemsPasswords("*","username",req.body.username);
+    console.log(userInformation)
     console.log("successful")
     status.isSuccessful=true;
-    res.send(status)
+    res.send([status,userInformation])
   } else {
     console.log("unsuccessful")
-    res.json(status)
+    res.send([status,"No account "])
   }
    
 })
 app.get("/:url", (req:any, res:any) => {
   let url = req.params.url;
   console.log(url);
-  let expiration = readItems("expire","longlink",url)as number[];
-  let links = readItems("longlink","longlink",null)as string[]
-  if (url in links) {
-    if (expiration[0]<Date.now()){
-      res.status(410).send("Your link has expired!" )
-    } else {
-      res.redirect(url);
-    }
-    
-  } else {
-    res.sendStatus(404);
+  url=parseInt(url)
+  let expiration = readItems(true,"expire","shortlink",url)as any;
+  let links = readItems(false,"shortlink","","") as any
+  console.log(expiration)
+  console.log(links)
+  let listoflinks=[];
+  for (let i of links){
+    console.log(i);
+    listoflinks.push(i.shortlink)
   }
+  console.log(listoflinks)
+  for (let i=0;i<listoflinks.length;i+=1){
+    console.log(i);
+    if (url===listoflinks[i]) {
+      console.log("hi")
+      if (expiration[0].expire<Date.now()){
+        res.status(410).send("Your link has expired!" )
+      } else {
+        console.log("redirecting")
+        let longlink:any=(readItems(true,"longlink","shortlink",url)) 
+        console.log(longlink)
+        res.redirect(longlink[0]["longlink"]);
+      }
+      
+    } else {
+      res.sendStatus(404);
+    }
+  }
+  
 });
 
 app.post("/createaccount",(req:any,res:any)=>{
@@ -230,9 +260,9 @@ app.post("/createaccount",(req:any,res:any)=>{
     "isSuccessful":false
   }
   let salt = makeid(10)
-  console.log(salt);
-  console.log(req.body.password+salt+pepper);
-  let hashed=hashSync(req.body.password+salt+pepper)
+  // console.log(salt);
+  // console.log(req.body.password+salt+pepper);
+  let hashed=hashSync(req.body.password+salt+pepper,SALT)
   try {
     insertValuesToPassword({
       "name":req.body.name,
@@ -247,6 +277,18 @@ app.post("/createaccount",(req:any,res:any)=>{
   }
 
 });
+
+app.post("/getlinks",(req:any,res:any)=>{
+  let salt:any=(readItemsPasswords("salt","username",req.body.username))!
+  let hashed=hashSync(req.body.password+salt[0].salt+pepper,SALT)
+  let savedPassword:any = readItemsPasswords("password","username",req.body.username)
+  if (savedPassword[0].password === hashed){
+    let links=readItems(true,"*","username",req.body.username)
+    res.send({"data":links})
+  } else {
+    res.sendStatus(503)
+  }
+})
 
 
 

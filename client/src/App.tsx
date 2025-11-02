@@ -6,6 +6,7 @@ let API_URL = "http://localhost:8000/api";
 let password_check="http://localhost:8000/password"
 
 function App() {
+
   let [data, setData] = useState("");
   let [input, setInput] = useState("");
   let [isURL, setIsURL] = useState(false);
@@ -14,8 +15,44 @@ function App() {
   let [username,setUsername]=useState("")
   let [name,setName]=useState("")
   let [isSuccessful,setIsSuccessful]=useState("");
-  let [created,setCreated]=useState("")
-  const expire_time=1;
+  let [created,setCreated]=useState("");
+  let [account,setAccount]=useState("None");
+  let [myLinks,setMyLinks]=useState("None")
+
+  async function getMyLinks(account:any){
+    if (isSuccessful!=="Successful"){
+      return;
+    } else {
+  
+    
+    try {
+      let payload = {
+        username:username,
+        password:password
+      };
+      const options = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      };
+  
+      let res = await fetch("localhost:8000/getlinks", options);
+      let data = await res.json();
+      setMyLinks(JSON.stringify(data));
+      
+  
+      
+    }
+    catch {
+      console.log("An error has occurred")
+    }  
+  }
+  }
+
+
+  const expire_time=10;
 
   async function checkPassword(){
     let payload={
@@ -33,8 +70,12 @@ function App() {
     let res:any = await fetch(password_check, options);
     let response=await res.json()
     console.log(response)
-    if (response.isSuccessful){
+    if (response[0].isSuccessful){
       setIsSuccessful("Successful");
+      console.log(response)
+      setAccount(response[1][0].name)
+      //getMyLinks(account);
+      
     } else {
       setIsSuccessful("unsuccessful");
     }
@@ -67,7 +108,8 @@ function App() {
       setIsURL(true);
       let payload = {
         myURL: input,
-        TTL:expire_time
+        TTL:expire_time,
+        account:username
       };
       const options = {
         method: "POST",
@@ -107,6 +149,7 @@ function App() {
   return (
     <>
       <h2>THE ULTIMATE LINK SHORTENER</h2>
+      <h4>Current Account: {account}</h4>
       <p>The shortened link will show up here: {data}</p>
       <QRCode
           size={256}
@@ -161,6 +204,8 @@ function App() {
     <button onClick={()=>createAccount()}>Create Account </button>
     <p>{created}</p>
     <p>{isSuccessful}</p>
+    <p>{myLinks}</p>
+
     
     </>
   );
